@@ -1,0 +1,25 @@
+# Git 忽略清單
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+
+# 環境變數
+.env
+
+# SQLite 資料庫
+instance/database.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
