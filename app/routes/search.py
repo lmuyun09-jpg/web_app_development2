@@ -4,7 +4,8 @@ Search Routes — 搜尋路由
 處理食譜搜尋功能，依關鍵字搜尋食譜名稱與材料。
 """
 
-from flask import Blueprint, render_template, request
+from flask import Blueprint, render_template, request, current_app
+from app.models import recipe
 
 search_bp = Blueprint('search', __name__)
 
@@ -13,12 +14,12 @@ search_bp = Blueprint('search', __name__)
 def search():
     """
     搜尋食譜。
-
-    - GET /search?q=關鍵字
-
-    取得搜尋關鍵字 q，
-    若 q 不為空，呼叫 recipe.search(keyword) 搜尋食譜名稱與材料名稱，
-    若 q 為空，回傳空結果。
-    渲染 search/results.html，傳入 recipes 結果與 keyword。
     """
-    pass
+    keyword = request.args.get('q', '').strip()
+    recipes = []
+    
+    if keyword:
+        db_path = current_app.config['DATABASE']
+        recipes = recipe.search(db_path, keyword)
+    
+    return render_template('search/results.html', recipes=recipes, keyword=keyword)

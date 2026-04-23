@@ -5,7 +5,8 @@ Step Routes — 步驟路由
 所有操作完成後重導向到食譜詳情頁。
 """
 
-from flask import Blueprint, request, redirect, url_for, abort
+from flask import Blueprint, request, redirect, url_for, abort, current_app, flash
+from app.models import step
 
 step_bp = Blueprint('step', __name__)
 
@@ -14,68 +15,77 @@ step_bp = Blueprint('step', __name__)
 def create(id):
     """
     新增步驟。
-
-    - POST /recipes/<id>/steps
-
-    接收表單資料（description），
-    驗證 description 不為空，呼叫 step.create()（自動編號），
-    重導向到 /recipes/<id>。
     """
-    pass
+    description = request.form.get('description', '').strip()
+    
+    if not description:
+        flash('步驟內容為必填', 'error')
+        return redirect(url_for('recipe.detail', id=id))
+
+    db_path = current_app.config['DATABASE']
+    step.create(db_path, id, description)
+    flash('新增步驟成功！', 'success')
+    return redirect(url_for('recipe.detail', id=id))
 
 
 @step_bp.route('/recipes/<int:id>/steps/<int:step_id>/edit', methods=['POST'])
 def update(id, step_id):
     """
     編輯步驟。
-
-    - POST /recipes/<id>/steps/<step_id>/edit
-
-    接收表單資料（description），
-    驗證 description 不為空，呼叫 step.update()，
-    重導向到 /recipes/<id>。
-    找不到步驟時回傳 404。
     """
-    pass
+    db_path = current_app.config['DATABASE']
+    s = step.get_by_id(db_path, step_id)
+    if not s or s['recipe_id'] != id:
+        abort(404)
+        
+    description = request.form.get('description', '').strip()
+    if not description:
+        flash('步驟內容為必填', 'error')
+        return redirect(url_for('recipe.detail', id=id))
+
+    step.update(db_path, step_id, description)
+    flash('步驟更新成功！', 'success')
+    return redirect(url_for('recipe.detail', id=id))
 
 
 @step_bp.route('/recipes/<int:id>/steps/<int:step_id>/delete', methods=['POST'])
 def delete(id, step_id):
     """
     刪除步驟。
-
-    - POST /recipes/<id>/steps/<step_id>/delete
-
-    呼叫 step.delete()（自動重新編號），
-    重導向到 /recipes/<id>。
-    找不到步驟時回傳 404。
     """
-    pass
+    db_path = current_app.config['DATABASE']
+    s = step.get_by_id(db_path, step_id)
+    if not s or s['recipe_id'] != id:
+        abort(404)
+        
+    step.delete(db_path, step_id)
+    flash('步驟已刪除', 'success')
+    return redirect(url_for('recipe.detail', id=id))
 
 
 @step_bp.route('/recipes/<int:id>/steps/<int:step_id>/move-up', methods=['POST'])
 def move_up(id, step_id):
     """
     步驟上移。
-
-    - POST /recipes/<id>/steps/<step_id>/move-up
-
-    呼叫 step.move_up()，與前一個步驟交換順序，
-    重導向到 /recipes/<id>。
-    已在最上方則不動作。
     """
-    pass
+    db_path = current_app.config['DATABASE']
+    s = step.get_by_id(db_path, step_id)
+    if not s or s['recipe_id'] != id:
+        abort(404)
+        
+    step.move_up(db_path, step_id)
+    return redirect(url_for('recipe.detail', id=id))
 
 
 @step_bp.route('/recipes/<int:id>/steps/<int:step_id>/move-down', methods=['POST'])
 def move_down(id, step_id):
     """
     步驟下移。
-
-    - POST /recipes/<id>/steps/<step_id>/move-down
-
-    呼叫 step.move_down()，與後一個步驟交換順序，
-    重導向到 /recipes/<id>。
-    已在最下方則不動作。
     """
-    pass
+    db_path = current_app.config['DATABASE']
+    s = step.get_by_id(db_path, step_id)
+    if not s or s['recipe_id'] != id:
+        abort(404)
+        
+    step.move_down(db_path, step_id)
+    return redirect(url_for('recipe.detail', id=id))

@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- 標題與操作列 -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div class="d-flex align-items-center">
+                <a href="{{ url_for('recipe.index') }}" class="btn btn-light rounded-circle me-3 shadow-sm"><i class="bi bi-arrow-left"></i></a>
+                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2">{{ recipe.category }}</span>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('recipe.edit_form', id=recipe.id) }}" class="btn btn-outline-secondary bg-white shadow-sm"><i class="bi bi-pencil me-1"></i>編輯</a>
+                <button type="button" class="btn btn-outline-danger bg-white shadow-sm" data-bs-toggle="modal" data-bs-target="#deleteModal"><i class="bi bi-trash me-1"></i>刪除</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <!-- 食譜基本資訊 -->
+        <div class="card glass-card border-0 mb-4 animate-fade-in shadow-sm" style="animation-delay: 0.1s;">
+            <div class="card-body p-4">
+                <h2 class="fw-bold mb-3">{{ recipe.name }}</h2>
+                <p class="text-muted mb-4">{{ recipe.description or '這道食譜還沒有簡介。' }}</p>
+                
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="text-muted"><i class="bi bi-clock me-2 text-primary"></i>烹飪時間</span>
+                    <span class="fw-bold">{{ recipe.cooking_time or '-' }} 分鐘</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="text-muted"><i class="bi bi-people me-2 text-primary"></i>建議份量</span>
+                    <span class="fw-bold">{{ recipe.servings or '-' }} 人份</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 材料清單 -->
+        <div class="card glass-card border-0 animate-fade-in shadow-sm" style="animation-delay: 0.2s;">
+            <div class="card-header bg-transparent border-0 pt-4 pb-0 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0"><i class="bi bi-basket me-2 text-primary"></i>所需材料</h5>
+                <button type="button" class="btn btn-sm btn-primary-custom rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#addIngredientModal">新增材料</button>
+            </div>
+            <div class="card-body p-4">
+                {% if ingredients %}
+                    <ul class="list-group list-group-flush bg-transparent">
+                    {% for ing in ingredients %}
+                        <li class="list-group-item bg-transparent px-0 py-3 d-flex justify-content-between align-items-center border-light">
+                            <div>
+                                <span class="fw-bold">{{ ing.name }}</span>
+                                {% if ing.amount or ing.unit %}
+                                    <span class="text-muted ms-2">{{ ing.amount }} {{ ing.unit }}</span>
+                                {% endif %}
+                            </div>
+                            <form action="{{ url_for('ingredient.delete', id=recipe.id, ing_id=ing.id) }}" method="POST" class="d-inline" onsubmit="return confirm('確定要刪除這個材料嗎？');">
+                                <button type="submit" class="btn btn-sm btn-link text-danger p-0"><i class="bi bi-x-circle fs-5"></i></button>
+                            </form>
+                        </li>
+                    {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="text-center text-muted py-4 bg-light rounded-3 mt-3">
+                        <p class="mb-0">尚未新增任何材料</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <!-- 步驟清單 -->
+        <div class="card glass-card border-0 h-100 animate-fade-in shadow-sm" style="animation-delay: 0.3s;">
+            <div class="card-header bg-transparent border-0 pt-4 pb-0 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0"><i class="bi bi-list-check me-2 text-primary"></i>烹飪步驟</h5>
+                <button type="button" class="btn btn-sm btn-primary-custom rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#addStepModal">新增步驟</button>
+            </div>
+            <div class="card-body p-4">
+                {% if steps %}
+                    <div class="step-list">
+                    {% for s in steps %}
+                        <div class="d-flex mb-4 position-relative align-items-start">
+                            <div class="step-number me-3 flex-shrink-0 d-flex justify-content-center align-items-center rounded-circle bg-primary text-white fw-bold shadow-sm" style="width: 36px; height: 36px; margin-top: 4px;">
+                                {{ s.step_number }}
+                            </div>
+                            <div class="flex-grow-1 bg-light rounded-4 p-4 position-relative border border-white border-opacity-50">
+                                <p class="mb-0 fs-5 lh-base">{{ s.description }}</p>
+                                
+                                <div class="position-absolute top-0 end-0 p-2 opacity-25 hover-opacity-100 d-flex align-items-center bg-white rounded-bottom-start shadow-sm" style="transition: opacity 0.2s;">
+                                    {% if not loop.first %}
+                                    <form action="{{ url_for('step.move_up', id=recipe.id, step_id=s.id) }}" method="POST" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-light p-1 me-1"><i class="bi bi-arrow-up"></i></button>
+                                    </form>
+                                    {% endif %}
+                                    {% if not loop.last %}
+                                    <form action="{{ url_for('step.move_down', id=recipe.id, step_id=s.id) }}" method="POST" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-light p-1 me-1"><i class="bi bi-arrow-down"></i></button>
+                                    </form>
+                                    {% endif %}
+                                    <form action="{{ url_for('step.delete', id=recipe.id, step_id=s.id) }}" method="POST" class="d-inline border-start ms-1 ps-2" onsubmit="return confirm('確定要刪除此步驟嗎？');">
+                                        <button type="submit" class="btn btn-sm btn-link text-danger p-0"><i class="bi bi-trash"></i></button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-5 bg-light rounded-3 mt-3">
+                        <i class="bi bi-list-ol fs-1 mb-3 d-block"></i>
+                        <p class="mb-0">尚未新增任何烹飪步驟</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 刪除食譜 Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold">確認刪除</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body py-4">
+        確定要刪除「<span class="fw-bold text-danger">{{ recipe.name }}</span>」嗎？此操作將會連同所有材料與步驟一併刪除，且無法復原。
+      </div>
+      <div class="modal-footer border-0 bg-light rounded-bottom">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+        <form action="{{ url_for('recipe.delete', id=recipe.id) }}" method="POST">
+            <button type="submit" class="btn btn-danger px-4">確定刪除</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 新增材料 Modal -->
+<div class="modal fade" id="addIngredientModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg glass-card">
+      <form action="{{ url_for('ingredient.create', id=recipe.id) }}" method="POST">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle me-2 text-primary"></i>新增材料</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body p-4">
+            <div class="mb-4">
+                <label class="form-label fw-bold">材料名稱 <span class="text-danger">*</span></label>
+                <input type="text" name="name" class="form-control form-control-lg bg-light border-0" required placeholder="如：豬五花肉">
+            </div>
+            <div class="row g-3">
+                <div class="col-6">
+                    <label class="form-label fw-bold">數量</label>
+                    <input type="text" name="amount" class="form-control bg-light border-0" placeholder="如：300">
+                </div>
+                <div class="col-6">
+                    <label class="form-label fw-bold">單位</label>
+                    <input type="text" name="unit" class="form-control bg-light border-0" placeholder="如：公克">
+                </div>
+            </div>
+          </div>
+          <div class="modal-footer border-0 bg-light rounded-bottom">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+            <button type="submit" class="btn btn-primary-custom px-4">儲存</button>
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- 新增步驟 Modal -->
+<div class="modal fade" id="addStepModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 shadow-lg glass-card">
+      <form action="{{ url_for('step.create', id=recipe.id) }}" method="POST">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle me-2 text-primary"></i>新增步驟</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body p-4">
+            <div class="mb-3">
+                <label class="form-label fw-bold">步驟內容 <span class="text-danger">*</span></label>
+                <textarea name="description" class="form-control bg-light border-0" rows="5" required placeholder="詳細描述這個步驟的做法..."></textarea>
+            </div>
+          </div>
+          <div class="modal-footer border-0 bg-light rounded-bottom">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+            <button type="submit" class="btn btn-primary-custom px-4">儲存</button>
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
